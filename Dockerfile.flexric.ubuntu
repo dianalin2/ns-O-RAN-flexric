@@ -163,7 +163,7 @@ RUN mkdir build && \
 
 RUN mkdir /playpen
 
-RUN apt-get update && apt-get install -y build-essential git cmake libsctp-dev autoconf automake libtool bison flex libboost-all-dev && apt-get clean python3-influxdb
+RUN apt-get update && apt-get install -y build-essential git cmake libsctp-dev autoconf automake libtool bison flex libboost-all-dev python3-influxdb
 
 WORKDIR /playpen
 
