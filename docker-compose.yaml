@@ -1,0 +1,77 @@
+services:
+  # ns3:
+  #   build:
+  #     context: e2sim-kpmv3-RCv1.03/e2sim
+  #     dockerfile: docker/Dockerfile
+  #   volumes:
+  #     - ./ns-3-mmwave-oran:/ns-3-mmwave-oran
+  #   tty: true
+  #   stdin_open: true
+  #   command:
+  #   - /bin/bash
+  flexric:
+    build:
+      context: flexric
+      dockerfile: docker/Dockerfile.flexric.ubuntu
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./flexric/flexric.conf:/usr/local/etc/flexric/flexric.conf
+      - ./flexric/src:/usr/local/src/flexric/src
+      - ./ns-3-mmwave-oran:/ns-3-mmwave-oran
+      - ./ns-3-mmwave-oran/GUI/FlexRIC xApp GUI trigger/stop_xApp.py:/flexric/stop_xApp.py
+      - ./ns-3-mmwave-oran/GUI/FlexRIC xApp GUI trigger/xApp_trigger.py:/flexric/xApp_trigger.py
+      # - ./flexric/xapp_rc_handover_ctrl.log:/flexric/xapp_rc_handover_ctrl.log
+      - ./flexric/examples/xApp/:/flexric/examples/xApp/
+    command:
+    - /bin/bash
+    ports:
+      - '36421:36421/sctp'
+      - '36422:36422/sctp'
+      - '38866:38866'
+      - '38867:38867'
+      - '38868:38868'
+      - '38869:38869'
+  gui:
+    build:
+      context: ns-3-mmwave-oran/GUI/
+      dockerfile: Dockerfile
+    ports:
+      - '8000:8000'
+    depends_on:
+      - influxdb
+    environment:
+      - INFLUXDB_DATABASE=influx
+      - INFLUXDB_HOST=influxdb
+      - INFLUXDB_PASSWORD=admin
+      - INFLUXDB_PORT=8086
+      - INFLUXDB_USERNAME=admin
+      - NS3_HOST=flexric
+
+  influxdb:
+    image: influxdb:1.8-alpine
+    env_file: ns-3-mmwave-oran/GUI/configuration.env
+    ports:
+      - '127.0.0.1:8086:8086'
+    command: sh -c "influxd & sleep 10 && influx -database influx -execute 'delete from /\w*/'; tail -f /dev/null"
+    volumes:
+      - .ns-3-mmwave-oran/GUI/:/imports
+      - influxdb_data:/var/lib/influxdb
+
+  grafana:
+    image: grafana/grafana:8.0.2
+    depends_on:
+      - influxdb
+    env_file: ns-3-mmwave-oran/GUI/configuration.env
+    links:
+      - influxdb
+    ports:
+      - '3000:3000'
+    command: sh -c "echo \"1,2,3\" > provacsv.csv"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./ns-3-mmwave-oran/GUI/grafana/provisioning/:/etc/grafana/provisioning/
+      - ./ns-3-mmwave-oran/GUI/grafana/dashboards/:/var/lib/grafana/dashboards/
+volumes:
+  influxdb_data: {}
+  grafana_data: {}
