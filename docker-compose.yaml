@@ -11,8 +11,8 @@ services:
   #   - /bin/bash
   flexric:
     build:
-      context: flexric
-      dockerfile: docker/Dockerfile.flexric.ubuntu
+      context: .
+      dockerfile: Dockerfile.flexric.ubuntu
     tty: true
     stdin_open: true
     volumes:
